@@ -71,8 +71,9 @@ function Element:New(Config)
 		Config.Window.NewElements and 12 or 10
 	)
 
+	Keybind.UIElements.Keybind.Frame.Frame.TextLabel.TextXAlignment = Enum.TextXAlignment.Center
 	Keybind.UIElements.Keybind.Size =
-		UDim2.new(0, 12 + 12 + Keybind.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X, 0, 42)
+		UDim2.new(0, 12 + 12 + 8 + Keybind.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X, 0, 42)
 	Keybind.UIElements.Keybind.AnchorPoint = Vector2.new(1, 0.5)
 	Keybind.UIElements.Keybind.Position = UDim2.new(1, 0, 0.5, 0)
 	Keybind.UIElements.Keybind.Interactable = false
@@ -86,7 +87,7 @@ function Element:New(Config)
 		Keybind.UIElements.Keybind.Frame.Frame.TextLabel:GetPropertyChangedSignal("TextBounds"),
 		function()
 			Keybind.UIElements.Keybind.Size =
-				UDim2.new(0, 12 + 12 + Keybind.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X, 0, 42)
+				UDim2.new(0, 12 + 12 + 8 + Keybind.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X, 0, 42)
 		end
 	)
 

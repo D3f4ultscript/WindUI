@@ -70,6 +70,7 @@ function UISettings.Build(Window, WindUI)
 	table.sort(themeNames)
 	themeSection:Dropdown({
 		Title = "Theme",
+		SearchBarEnabled = true,
 		Values = themeNames,
 		Value = currentKey,
 		Flag = "UISettings_Theme",
@@ -91,6 +92,7 @@ function UISettings.Build(Window, WindUI)
 	local base = "WindUI/" .. tostring(Window.Folder) .. "/" .. tostring(gameId) .. "/" .. tostring(userId) .. "/config"
 	ensureFolders(base)
 	ConfigManager:SetPath(base)
+	local autoloadPath = "WindUI/" .. tostring(Window.Folder) .. "/" .. tostring(gameId) .. "/" .. tostring(userId) .. "/autoload.txt"
 
 	local nameValue, importValue, selected = "", "", nil
 
@@ -104,6 +106,28 @@ function UISettings.Build(Window, WindUI)
 		return ConfigManager.Path .. name .. ".json"
 	end
 
+	local function readAutoload()
+		if not isfile(autoloadPath) then
+			return nil
+		end
+		local ok, content = pcall(readfile, autoloadPath)
+		content = ok and sanitize(content) or ""
+		if content ~= "" and isfile(pathOf(content)) then
+			return content
+		end
+		return nil
+	end
+
+	local function loadConfig(name)
+		local config = ConfigManager:CreateConfig(name)
+		local ok, result, message = pcall(config.Load, config)
+		if ok and result ~= false then
+			return true
+		end
+		return false, tostring(ok and message or result):sub(1, 80)
+	end
+
+	local autoloadName = readAutoload()
 	local configSection = tab:Section({ Title = "Configs", Opened = true })
 	configSection:Input({
 		Title = "Config Name",
@@ -114,11 +138,14 @@ function UISettings.Build(Window, WindUI)
 	})
 	local dropdown = configSection:Dropdown({
 		Title = "Saved Configs",
+		SearchBarEnabled = true,
 		Values = configNames(),
 		Callback = function(value)
 			selected = value
 		end,
 	})
+
+	local autoloadStatus = configSection:Paragraph({ Title = "Autoload", Desc = autoloadName or "None" })
 
 	local function refresh(select)
 		local list = configNames()
@@ -172,12 +199,11 @@ function UISettings.Build(Window, WindUI)
 			if not name then
 				return
 			end
-			local config = ConfigManager:CreateConfig(name)
-			local ok, result, message = pcall(config.Load, config)
-			if ok and result ~= false then
+			local ok, message = loadConfig(name)
+			if ok then
 				notify("Loaded '" .. name .. "'.")
 			else
-				notify("Loading failed: " .. tostring(ok and message or result):sub(1, 80))
+				notify("Loading failed: " .. message)
 			end
 		end,
 	})
@@ -199,12 +225,41 @@ function UISettings.Build(Window, WindUI)
 			end
 			local ok, message = ConfigManager:DeleteConfig(name)
 			if ok then
+				if autoloadName == name then
+					autoloadName = nil
+					pcall(writefile, autoloadPath, "")
+					autoloadStatus:SetDesc("None")
+				end
 				selected = nil
 				refresh()
 				notify("Deleted '" .. name .. "'.")
 			else
 				notify(tostring(message))
 			end
+		end,
+	})
+
+	configSection:Button({
+		Title = "Set as Autoload",
+		Desc = "Loads the selected config automatically next time.",
+		Callback = function()
+			local name = requireSelected()
+			if not name then
+				return
+			end
+			writefile(autoloadPath, name)
+			autoloadName = name
+			autoloadStatus:SetDesc(name)
+			notify("'" .. name .. "' will load automatically.")
+		end,
+	})
+	configSection:Button({
+		Title = "Clear Autoload",
+		Callback = function()
+			pcall(writefile, autoloadPath, "")
+			autoloadName = nil
+			autoloadStatus:SetDesc("None")
+			notify("Autoload cleared.")
 		end,
 	})
 
@@ -263,6 +318,15 @@ function UISettings.Build(Window, WindUI)
 			notify("Imported as '" .. name .. "'.")
 		end,
 	})
+	if autoloadName then
+		task.delay(1, function()
+			if Window.Destroyed then
+				return
+			end
+			local ok, message = loadConfig(autoloadName)
+			notify(ok and ("Autoloaded '" .. autoloadName .. "'.") or ("Autoload failed: " .. message))
+		end)
+	end
 end
 
 return UISettings

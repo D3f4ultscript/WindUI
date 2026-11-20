@@ -32193,8 +32193,9 @@ nil,
 aj.Window.NewElements and 12 or 10
 )
 
+ak.UIElements.Keybind.Frame.Frame.TextLabel.TextXAlignment=Enum.TextXAlignment.Center
 ak.UIElements.Keybind.Size=
-UDim2.new(0,24+ak.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X,0,42)
+UDim2.new(0,32+ak.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X,0,42)
 ak.UIElements.Keybind.AnchorPoint=Vector2.new(1,0.5)
 ak.UIElements.Keybind.Position=UDim2.new(1,0,0.5,0)
 ak.UIElements.Keybind.Interactable=false
@@ -32208,7 +32209,7 @@ ad.AddSignal(
 ak.UIElements.Keybind.Frame.Frame.TextLabel:GetPropertyChangedSignal"TextBounds",
 function()
 ak.UIElements.Keybind.Size=
-UDim2.new(0,24+ak.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X,0,42)
+UDim2.new(0,32+ak.UIElements.Keybind.Frame.Frame.TextLabel.TextBounds.X,0,42)
 end
 )
 
@@ -39548,6 +39549,7 @@ end
 table.sort(as)
 ar:Dropdown{
 Title="Theme",
+SearchBarEnabled=true,
 Values=as,
 Value=au,
 Flag="UISettings_Theme",
@@ -39569,178 +39571,241 @@ local aw=ai.LocalPlayer and ai.LocalPlayer.UserId or 0
 local ax="WindUI/"..tostring(al.Folder).."/"..tostring(av).."/"..tostring(aw).."/config"
 ensureFolders(ax)
 an:SetPath(ax)
+local ay="WindUI/"..tostring(al.Folder).."/"..tostring(av).."/"..tostring(aw).."/autoload.txt"
 
-local ay,az,aA="",""
+local az,aA,aB="",""
 
 local function configNames()
-local aB=an:AllConfigs()
-table.sort(aB)
-return aB
+local b=an:AllConfigs()
+table.sort(b)
+return b
 end
 
-local function pathOf(aB)
-return an.Path..aB..".json"
+local function pathOf(b)
+return an.Path..b..".json"
 end
 
-local aB=ap:Section{Title="Configs",Opened=true}
-aB:Input{
+local function readAutoload()
+if not isfile(ay)then
+return nil
+end
+local b,d=pcall(readfile,ay)
+d=b and sanitize(d)or""
+if d~=""and isfile(pathOf(d))then
+return d
+end
+return nil
+end
+
+local function loadConfig(b)
+local d=an:CreateConfig(b)
+local f,g,h=pcall(d.Load,d)
+if f and g~=false then
+return true
+end
+return false,tostring(f and h or g):sub(1,80)
+end
+
+local b=readAutoload()
+local d=ap:Section{Title="Configs",Opened=true}
+d:Input{
 Title="Config Name",
 Placeholder="My Config",
-Callback=function(b)
-ay=b
+Callback=function(f)
+az=f
 end,
 }
-local b=aB:Dropdown{
+local f=d:Dropdown{
 Title="Saved Configs",
+SearchBarEnabled=true,
 Values=configNames(),
-Callback=function(b)
-aA=b
+Callback=function(f)
+aB=f
 end,
 }
 
-local function refresh(d)
-local f=configNames()
-b:Refresh(f)
-if d then
-aA=d
-elseif not table.find(f,aA)then
-aA=nil
+local g=d:Paragraph{Title="Autoload",Desc=b or"None"}
+
+local function refresh(h)
+local i=configNames()
+f:Refresh(i)
+if h then
+aB=h
+elseif not table.find(i,aB)then
+aB=nil
 end
-if aA then
-b:Select(aA)
+if aB then
+f:Select(aB)
 end
 end
 
-local function save(d)
-local f=an:CreateConfig(d)
-local g,h=pcall(f.Save,f)
-if not g then
-notify("Saving failed: "..tostring(h):sub(1,80))
+local function save(h)
+local i=an:CreateConfig(h)
+local l,m=pcall(i.Save,i)
+if not l then
+notify("Saving failed: "..tostring(m):sub(1,80))
 return false
 end
 return true
 end
 
 local function requireSelected()
-if not aA then
+if not aB then
 notify"Select a config first."
 return nil
 end
-return aA
+return aB
 end
 
-aB:Button{
+d:Button{
 Title="Create Config",
 Callback=function()
-local d=sanitize(ay)
-if d==""then
+local h=sanitize(az)
+if h==""then
 notify"Enter a config name first."
-elseif isfile(pathOf(d))then
-notify("'"..d.."' already exists. Select it and use Overwrite.")
-elseif save(d)then
-refresh(d)
-notify("Created '"..d.."'.")
+elseif isfile(pathOf(h))then
+notify("'"..h.."' already exists. Select it and use Overwrite.")
+elseif save(h)then
+refresh(h)
+notify("Created '"..h.."'.")
 end
 end,
 }
-aB:Button{
+d:Button{
 Title="Load Config",
 Callback=function()
-local d=requireSelected()
-if not d then
+local h=requireSelected()
+if not h then
 return
 end
-local f=an:CreateConfig(d)
-local g,h,i=pcall(f.Load,f)
-if g and h~=false then
-notify("Loaded '"..d.."'.")
+local i,l=loadConfig(h)
+if i then
+notify("Loaded '"..h.."'.")
 else
-notify("Loading failed: "..tostring(g and i or h):sub(1,80))
+notify("Loading failed: "..l)
 end
 end,
 }
-aB:Button{
+d:Button{
 Title="Overwrite Config",
 Callback=function()
-local d=requireSelected()
-if d and save(d)then
-notify("Overwrote '"..d.."'.")
+local h=requireSelected()
+if h and save(h)then
+notify("Overwrote '"..h.."'.")
 end
 end,
 }
-aB:Button{
+d:Button{
 Title="Delete Config",
 Callback=function()
-local d=requireSelected()
-if not d then
+local h=requireSelected()
+if not h then
 return
 end
-local f,g=an:DeleteConfig(d)
-if f then
-aA=nil
+local i,l=an:DeleteConfig(h)
+if i then
+if b==h then
+b=nil
+pcall(writefile,ay,"")
+g:SetDesc"None"
+end
+aB=nil
 refresh()
-notify("Deleted '"..d.."'.")
+notify("Deleted '"..h.."'.")
 else
-notify(tostring(g))
+notify(tostring(l))
 end
 end,
 }
 
-local d=ap:Section{Title="Import / Export",Opened=true}
 d:Button{
+Title="Set as Autoload",
+Desc="Loads the selected config automatically next time.",
+Callback=function()
+local h=requireSelected()
+if not h then
+return
+end
+writefile(ay,h)
+b=h
+g:SetDesc(h)
+notify("'"..h.."' will load automatically.")
+end,
+}
+d:Button{
+Title="Clear Autoload",
+Callback=function()
+pcall(writefile,ay,"")
+b=nil
+g:SetDesc"None"
+notify"Autoload cleared."
+end,
+}
+
+local h=ap:Section{Title="Import / Export",Opened=true}
+h:Button{
 Title="Export Config",
 Desc="Copies the selected config to your clipboard.",
 Callback=function()
-local f=requireSelected()
-if not f then
+local i=requireSelected()
+if not i then
 return
 end
 if not setclipboard then
 notify"This executor cannot use the clipboard."
 return
 end
-local g,h=pcall(readfile,pathOf(f))
-if g and h then
-setclipboard(h)
-notify("Copied '"..f.."' to the clipboard.")
+local l,m=pcall(readfile,pathOf(i))
+if l and m then
+setclipboard(m)
+notify("Copied '"..i.."' to the clipboard.")
 else
 notify"Config file not found."
 end
 end,
 }
-d:Input{
+h:Input{
 Title="Import Text",
 Type="Textarea",
 Placeholder="Paste an exported config here",
-Callback=function(f)
-az=f
+Callback=function(i)
+aA=i
 end,
 }
-d:Button{
+h:Button{
 Title="Import Config",
 Desc="Uses the name from Config Name, or 'Imported'.",
 Callback=function()
-local f,g=pcall(function()
-return af:JSONDecode(az)
+local i,l=pcall(function()
+return af:JSONDecode(aA)
 end)
-if not(f and type(g)=="table"and type(g.__elements)=="table")then
+if not(i and type(l)=="table"and type(l.__elements)=="table")then
 notify"This is not a valid config."
 return
 end
-local h=sanitize(ay)
-if h==""then
-h="Imported"
+local m=sanitize(az)
+if m==""then
+m="Imported"
 end
-if isfile(pathOf(h))then
-notify("'"..h.."' already exists. Choose another name.")
+if isfile(pathOf(m))then
+notify("'"..m.."' already exists. Choose another name.")
 return
 end
-g.__autoload=false
-writefile(pathOf(h),af:JSONEncode(g))
-refresh(h)
-notify("Imported as '"..h.."'.")
+l.__autoload=false
+writefile(pathOf(m),af:JSONEncode(l))
+refresh(m)
+notify("Imported as '"..m.."'.")
 end,
 }
+if b then
+task.delay(1,function()
+if al.Destroyed then
+return
+end
+local i,l=loadConfig(b)
+notify(i and("Autoloaded '"..b.."'.")or("Autoload failed: "..l))
+end)
+end
 end
 
 return ak end end
