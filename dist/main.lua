@@ -4,12 +4,12 @@
     | |/ |/ / / _ \/ _  / /_/ // /  
     |__/|__/_/_//_/\_,_/\____/___/
     
-    v1.6.66  |  2026-10-07  |  Roblox UI Library for scripts
+    v1.7.0  |  2026-11-20  |  Roblox UI Library for scripts
     
     To view the source code, see the `src/` folder on the official GitHub repository.
     
     Author: Footagesus (Footages, .ftgs, oftgs)
-    Github: https://github.com/Footagesus/WindUI
+    Github: https://github.com/D3f4ultscript/WindUI
     Discord: https://discord.gg/ftgs-development-hub-1300692552005189632
     License: MIT
 ]]
@@ -26728,9 +26728,9 @@ New=a.load'p'.New
 return[[
 {
     "name": "windui",
-    "version": "1.6.66",
+    "version": "1.7.0",
     "main": "./dist/main.lua",
-    "repository": "https://github.com/Footagesus/WindUI",
+    "repository": "https://github.com/D3f4ultscript/WindUI",
     "discord": "https://discord.gg/ftgs-development-hub-1300692552005189632",
     "author": "Footagesus",
     "description": "Roblox UI Library for scripts",
@@ -29656,11 +29656,7 @@ if as.Enabled==false then
 af.IsOpenButtonEnabled=false
 end
 
-if as.OnlyMobile~=false then
-as.OnlyMobile=true
-else
-af.IsPC=false
-end
+af.OpenButtonOnlyMobile=as.OnlyMobile==true
 
 
 if as.Draggable==false and ak and al then
@@ -37333,6 +37329,7 @@ Destroyed=false,
 IsFullscreen=false,
 CanResize=av.Resizable~=false,
 IsOpenButtonEnabled=true,
+OpenButtonOnlyMobile=false,
 
 CurrentConfig=nil,
 ConfigManager=nil,
@@ -38752,7 +38749,7 @@ end
 
 aw.UIElements.Main.Visible=false
 
-if aw.OpenButtonMain and not aw.Destroyed and not aw.IsPC and aw.IsOpenButtonEnabled then
+if aw.OpenButtonMain and not aw.Destroyed and(not aw.IsPC or not aw.OpenButtonOnlyMobile)and aw.IsOpenButtonEnabled then
 aw.OpenButtonMain:Visible(true)
 end
 end)
@@ -39477,7 +39474,276 @@ end
 
 
 return aw
-end end end
+end end function a.al()
+
+local aa=(cloneref or clonereference or function(aa)
+return aa
+end)
+
+local af=aa(game:GetService"HttpService")
+local ai=aa(game:GetService"Players")
+
+local ak={}
+
+local function sanitize(al)
+al=tostring(al or""):gsub("[^%w%-_ ]","")
+al=al:gsub("^%s+",""):gsub("%s+$","")
+return al:sub(1,40)
+end
+
+local function ensureFolders(al)
+if not(isfolder and makefolder)then
+return
+end
+local am=""
+for an in al:gmatch"[^/]+"do
+am=am==""and an or am.."/"..an
+if not isfolder(am)then
+makefolder(am)
+end
+end
+end
+
+function ak.Build(al,am)
+if al.Destroyed then
+return
+end
+
+local an=al.ConfigManager
+local ao=al.TabModule and al.TabModule.SelectedTab
+
+local ap=al:Tab{Title="UI Settings",Icon="settings"}
+ap.UIElements.Main.LayoutOrder=1000000
+
+if ao and al.TabModule.Tabs[ao]then
+al.TabModule:SelectTab(ao)
+end
+
+local function notify(aq)
+am:Notify{Title="UI Settings",Content=aq,Duration=3}
+end
+
+local aq=ap:Section{Title="Interface",Opened=true}
+if not al.ToggleKey then
+aq:Keybind{
+Title="Toggle Menu",
+Value="RightShift",
+Flag="UISettings_MenuKey",
+Callback=function()
+al:Toggle()
+end,
+}
+end
+
+local ar=ap:Section{Title="Theme",Opened=true}
+local as={}
+local at=am:GetCurrentTheme()
+local au
+for av,aw in next,am:GetThemes()do
+table.insert(as,av)
+if aw.Name==at then
+au=av
+end
+end
+table.sort(as)
+ar:Dropdown{
+Title="Theme",
+Values=as,
+Value=au,
+Flag="UISettings_Theme",
+Callback=function(av)
+if av and av~=au then
+au=av
+am:SetTheme(av)
+end
+end,
+}
+
+if not(an and an.Path and writefile and readfile and isfile)then
+ap:Paragraph{Title="Configs unavailable",Desc="This executor has no file functions."}
+return
+end
+
+local av=game.GameId~=0 and game.GameId or game.PlaceId
+local aw=ai.LocalPlayer and ai.LocalPlayer.UserId or 0
+local ax="WindUI/"..tostring(al.Folder).."/"..tostring(av).."/"..tostring(aw).."/config"
+ensureFolders(ax)
+an:SetPath(ax)
+
+local ay,az,aA="",""
+
+local function configNames()
+local aB=an:AllConfigs()
+table.sort(aB)
+return aB
+end
+
+local function pathOf(aB)
+return an.Path..aB..".json"
+end
+
+local aB=ap:Section{Title="Configs",Opened=true}
+aB:Input{
+Title="Config Name",
+Placeholder="My Config",
+Callback=function(b)
+ay=b
+end,
+}
+local b=aB:Dropdown{
+Title="Saved Configs",
+Values=configNames(),
+Callback=function(b)
+aA=b
+end,
+}
+
+local function refresh(d)
+local f=configNames()
+b:Refresh(f)
+if d then
+aA=d
+elseif not table.find(f,aA)then
+aA=nil
+end
+if aA then
+b:Select(aA)
+end
+end
+
+local function save(d)
+local f=an:CreateConfig(d)
+local g,h=pcall(f.Save,f)
+if not g then
+notify("Saving failed: "..tostring(h):sub(1,80))
+return false
+end
+return true
+end
+
+local function requireSelected()
+if not aA then
+notify"Select a config first."
+return nil
+end
+return aA
+end
+
+aB:Button{
+Title="Create Config",
+Callback=function()
+local d=sanitize(ay)
+if d==""then
+notify"Enter a config name first."
+elseif isfile(pathOf(d))then
+notify("'"..d.."' already exists. Select it and use Overwrite.")
+elseif save(d)then
+refresh(d)
+notify("Created '"..d.."'.")
+end
+end,
+}
+aB:Button{
+Title="Load Config",
+Callback=function()
+local d=requireSelected()
+if not d then
+return
+end
+local f=an:CreateConfig(d)
+local g,h,i=pcall(f.Load,f)
+if g and h~=false then
+notify("Loaded '"..d.."'.")
+else
+notify("Loading failed: "..tostring(g and i or h):sub(1,80))
+end
+end,
+}
+aB:Button{
+Title="Overwrite Config",
+Callback=function()
+local d=requireSelected()
+if d and save(d)then
+notify("Overwrote '"..d.."'.")
+end
+end,
+}
+aB:Button{
+Title="Delete Config",
+Callback=function()
+local d=requireSelected()
+if not d then
+return
+end
+local f,g=an:DeleteConfig(d)
+if f then
+aA=nil
+refresh()
+notify("Deleted '"..d.."'.")
+else
+notify(tostring(g))
+end
+end,
+}
+
+local d=ap:Section{Title="Import / Export",Opened=true}
+d:Button{
+Title="Export Config",
+Desc="Copies the selected config to your clipboard.",
+Callback=function()
+local f=requireSelected()
+if not f then
+return
+end
+if not setclipboard then
+notify"This executor cannot use the clipboard."
+return
+end
+local g,h=pcall(readfile,pathOf(f))
+if g and h then
+setclipboard(h)
+notify("Copied '"..f.."' to the clipboard.")
+else
+notify"Config file not found."
+end
+end,
+}
+d:Input{
+Title="Import Text",
+Type="Textarea",
+Placeholder="Paste an exported config here",
+Callback=function(f)
+az=f
+end,
+}
+d:Button{
+Title="Import Config",
+Desc="Uses the name from Config Name, or 'Imported'.",
+Callback=function()
+local f,g=pcall(function()
+return af:JSONDecode(az)
+end)
+if not(f and type(g)=="table"and type(g.__elements)=="table")then
+notify"This is not a valid config."
+return
+end
+local h=sanitize(ay)
+if h==""then
+h="Imported"
+end
+if isfile(pathOf(h))then
+notify("'"..h.."' already exists. Choose another name.")
+return
+end
+g.__autoload=false
+writefile(pathOf(h),af:JSONEncode(g))
+refresh(h)
+notify("Imported as '"..h.."'.")
+end,
+}
+end
+
+return ak end end
 
 local aa={
 Window=nil,
@@ -39913,6 +40179,11 @@ end
 
 
 
+
+if aA.UISettings~=false then
+local i=a.load'al'
+task.defer(i.Build,h,aa)
+end
 
 return h
 end

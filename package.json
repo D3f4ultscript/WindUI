@@ -1,6 +1,6 @@
 {
     "name": "windui",
-    "version": "1.6.66",
+    "version": "1.7.0",
     "main": "./dist/main.lua",
     "repository": "https://github.com/D3f4ultscript/WindUI",
     "discord": "https://discord.gg/ftgs-development-hub-1300692552005189632",

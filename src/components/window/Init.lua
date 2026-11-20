@@ -76,6 +76,7 @@ return function(Config)
 		IsFullscreen = false,
 		CanResize = Config.Resizable ~= false,
 		IsOpenButtonEnabled = true,
+		OpenButtonOnlyMobile = false,
 
 		CurrentConfig = nil,
 		ConfigManager = nil,
@@ -1495,7 +1496,7 @@ return function(Config)
 
 			Window.UIElements.Main.Visible = false
 
-			if Window.OpenButtonMain and not Window.Destroyed and not Window.IsPC and Window.IsOpenButtonEnabled then
+			if Window.OpenButtonMain and not Window.Destroyed and (not Window.IsPC or not Window.OpenButtonOnlyMobile) and Window.IsOpenButtonEnabled then
 				Window.OpenButtonMain:Visible(true)
 			end
 		end)

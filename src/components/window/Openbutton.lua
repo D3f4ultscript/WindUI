@@ -219,11 +219,7 @@ function OpenButton.New(Window)
             Window.IsOpenButtonEnabled = false
         end
         
-        if OpenButtonModule.OnlyMobile ~= false then
-            OpenButtonModule.OnlyMobile = true
-        else
-            Window.IsPC = false
-        end
+        Window.OpenButtonOnlyMobile = OpenButtonModule.OnlyMobile == true
         
         
         if OpenButtonModule.Draggable == false and Drag and Divider then

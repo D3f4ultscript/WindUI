@@ -433,6 +433,11 @@ function WindUI:CreateWindow(Config)
 	--     }
 	-- end
 
+	if Config.UISettings ~= false then
+		local UISettings = require("./components/UISettings")
+		task.defer(UISettings.Build, Window, WindUI)
+	end
+
 	return Window
 end
 
